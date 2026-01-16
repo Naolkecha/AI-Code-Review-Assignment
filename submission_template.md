@@ -30,17 +30,17 @@
 ## 2) Proposed Fixes / Improvements
 ### Summary of changes
 
-Fixed the denominator bug: Added a `count` variable that only increments for valid, non-cancelled orders. Now the math is correct - we divide by the number of orders we actually summed.
+- Fixed the denominator bug: Added a `count` variable that only increments for valid, non-cancelled orders. Now the math is correct - we divide by the number of orders we actually summed.
 
-Added guard clause for empty lists: Returns 0 instead of crashing. I chose to return 0 rather than raise an exception because it's more defensive - calling code won't break. Could argue for raising `ValueError` to force explicit handling, but for a calculation function like this, returning a sensible default seems better. Documented this in the docstring.
+- Added guard clause for empty lists: Returns 0 instead of crashing. I chose to return 0 rather than raise an exception because it's more defensive - calling code won't break. Could argue for raising `ValueError` to force explicit handling, but for a calculation function like this, returning a sensible default seems better. Documented this in the docstring.
 
-Used `.get()` for dictionary access: Instead of `order["status"]`, now using `order.get("status")`. Makes the function resilient to missing keys. I considered validating the entire order structure upfront, but that felt too rigid - this way we just skip bad records and process what we can.
+- Used `.get()` for dictionary access: Instead of `order["status"]`, now using `order.get("status")`. Makes the function resilient to missing keys. I considered validating the entire order structure upfront, but that felt too rigid - this way we just skip bad records and process what we can.
 
-Wrapped float conversion in try-except: The `float(amount)` call now has error handling. Data validation might happen elsewhere in the system, so this function should be able to handle whatever gets thrown at it. Downside is that silently skipping bad data could hide quality issues - in production I'd add logging here to track how often this happens.
+- Wrapped float conversion in try-except: The `float(amount)` call now has error handling. Data validation might happen elsewhere in the system, so this function should be able to handle whatever gets thrown at it. Downside is that silently skipping bad data could hide quality issues - in production I'd add logging here to track how often this happens.
 
-Added docstring: Documents what goes in, what comes out, and how edge cases are handled.
+- Added docstring: Documents what goes in, what comes out, and how edge cases are handled.
 
-The overall approach is defensive programming - the function never crashes, always returns a number. For a calculation function that might be called from many places, this seems like the right tradeoff.
+- The overall approach is defensive programming - the function never crashes, always returns a number. For a calculation function that might be called from many places, this seems like the right tradeoff.
 
 ### Corrected code
 See `correct_task1.py`
@@ -119,13 +119,13 @@ This function calculates the average order value by iterating through orders, id
 ## 2) Proposed Fixes / Improvements
 ### Summary of changes
 
-Rewrote validation with regex: Email validation is a solved problem - regex is the standard approach. The pattern I used (`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`) checks for: local part, @ symbol, domain, dot, and TLD. It's not RFC 5322 compliant (full email spec is insanely complex), but it's a practical compromise - strict enough to catch obvious garbage, lenient enough to accept real emails.
+- Rewrote validation with regex: Email validation is a solved problem - regex is the standard approach. The pattern I used (`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`) checks for: local part, @ symbol, domain, dot, and TLD. It's not RFC 5322 compliant (full email spec is insanely complex), but it's a practical compromise - strict enough to catch obvious garbage, lenient enough to accept real emails.
 
-Added type checking: Check `isinstance(email, str)` before validation so non-strings get skipped instead of crashing.
+- Added type checking: Check `isinstance(email, str)` before validation so non-strings get skipped instead of crashing.
 
-Strip whitespace: User input often has accidental spaces. "  user@example.com  " should be valid. Small UX improvement.
+- Strip whitespace: User input often has accidental spaces. "  user@example.com  " should be valid. Small UX improvement.
 
-Added docstring and imported `re`: Documents what the function does and brings in the regex module.
+- Added docstring and imported `re`: Documents what the function does and brings in the regex module.
 
 I considered using a library like `email-validator` which would be more robust and handle internationalized domains, but that adds an external dependency. Could also do simpler checks (just verify "something@something.something" format) but that's barely better than the original. The regex approach seems like the right balance.
 
@@ -211,15 +211,15 @@ This function counts valid email addresses in a list by checking each entry agai
 ## 2) Proposed Fixes / Improvements
 ### Summary of changes
 
-Fixed the denominator: Count variable now increments only after successful float conversion. Same fix as Task 1 - divide by the count of values we actually summed.
+- Fixed the denominator: Count variable now increments only after successful float conversion. Same fix as Task 1 - divide by the count of values we actually summed.
 
-Added early return for empty lists: Returns 0 instead of crashing. Consistent with how I handled Task 1.
+- Added early return for empty lists: Returns 0 instead of crashing. Consistent with how I handled Task 1.
 
-Wrapped `float()` in try-except: Real data has errors - sensor readings might be "ERROR", "N/A", or other placeholders. Catches `ValueError` (non-numeric strings) and `TypeError` (wrong types). Silently skips invalid values, though in production I'd add logging here to track data quality.
+- Wrapped `float()` in try-except: Real data has errors - sensor readings might be "ERROR", "N/A", or other placeholders. Catches `ValueError` (non-numeric strings) and `TypeError` (wrong types). Silently skips invalid values, though in production I'd add logging here to track data quality.
 
-Returns 0 when no valid measurements exist: Consistent with empty list behavior. Could return `None` to distinguish "no data" from "average is zero", but 0 is simpler for callers.
+- Returns 0 when no valid measurements exist: Consistent with empty list behavior. Could return `None` to distinguish "no data" from "average is zero", but 0 is simpler for callers.
 
-Added docstring: Documents what goes in and out. Preserves the original intent (skip None values) while fixing the bugs.
+- Added docstring: Documents what goes in and out. Preserves the original intent (skip None values) while fixing the bugs.
 
 The approach is forgiving with input (skip bad data) but correct in calculation. For data processing, you usually want to work with whatever valid data exists rather than failing on the first error.
 
