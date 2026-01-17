@@ -51,25 +51,25 @@ See `correct_task1.py`
 If you were to test this function, what areas or scenarios would you focus on, and why?
 
 Calculation correctness (where the bug was):
-- Mix of cancelled and non-cancelled orders - verify average excludes cancelled ones correctly
-- Test case: `[{status: 'completed', amount: 100}, {status: 'cancelled', amount: 50}, {status: 'completed', amount: 200}]` should return 150, not 116.67
+- Mix of cancelled and non-cancelled orders - this directly tests the denominator fix since the original bug was dividing by total count
+- Test case: `[{status: 'completed', amount: 100}, {status: 'cancelled', amount: 50}, {status: 'completed', amount: 200}]` should return 150, not 116.67 - proves we're counting correctly
 
 Edge cases:
-- Empty list - should return 0 without crashing
-- All cancelled orders - should return 0
-- Single order - verify division by 1 works
-- No cancelled orders - verify it still works when filter condition is never true
+- Empty list - should return 0 without crashing (common real-world scenario)
+- All cancelled orders - should return 0 (tests division by zero protection)
+- Single order - verify division by 1 works (boundary condition)
+- No cancelled orders - verify it still works when filter condition is never true (normal case shouldn't break)
 
 Error handling:
-- Orders with missing "status" or "amount" keys - should skip gracefully
-- Non-numeric amounts - should handle without crashing
-- Non-dictionary items in the list - should skip them
-- Decimal values - make sure float math works correctly
+- Orders with missing "status" or "amount" keys - tests the `.get()` fix and resilience to malformed data
+- Non-numeric amounts - tests the try-except block around float conversion
+- Non-dictionary items in the list - tests type checking (isinstance)
+- Decimal values - financial calculations need precision, verify float math is accurate
 
 Additional testing:
-- Property-based testing (hypothesis) to generate random order lists and verify invariants
-- Test with real data from staging to catch unexpected patterns
-- Wouldn't test extreme values (billions of orders) or concurrency - pure function, not a concern
+- Property-based testing (hypothesis) to generate random order lists and verify invariants - catches edge cases we didn't think of
+- Test with real data from staging to catch unexpected patterns - real data is messier than test data
+- Wouldn't test extreme values (billions of orders) or concurrency - pure function with no shared state, not relevant concerns
 
 
 ## 3) Explanation Review & Rewrite
@@ -139,30 +139,30 @@ See `correct_task2.py`
 If you were to test this function, what areas or scenarios would you focus on, and why?
 
 Valid formats (should accept):
-- Standard emails: "user@example.com", "first.last@company.co.uk"
-- Special characters: "user+tag@example.com", "user_name@example.com"
-- Subdomains: "user@mail.example.com"
-- Whitespace handling: "  user@example.com  " should work after stripping
+- Standard emails: "user@example.com", "first.last@company.co.uk" - most common formats, must work
+- Special characters: "user+tag@example.com", "user_name@example.com" - tests regex pattern handles common special chars
+- Subdomains: "user@mail.example.com" - tests domain part accepts dots
+- Whitespace handling: "  user@example.com  " should work after stripping - tests the strip() fix
 
 Invalid formats (should reject):
-- No @ symbol: "notanemail", "user.example.com"
-- Malformed: "@", "user@", "@domain.com", "user@@domain.com"
-- Missing TLD: "user@domain"
-- Incomplete domain: "user@domain."
-- Multiple @ symbols: "user@domain@extra.com"
-- Spaces in middle: "user name@domain.com"
+- No @ symbol: "notanemail", "user.example.com" - basic validation requirement
+- Malformed: "@", "user@", "@domain.com", "user@@domain.com" - tests regex boundaries
+- Missing TLD: "user@domain" - tests that we require a dot in domain
+- Incomplete domain: "user@domain." - tests TLD requirement
+- Multiple @ symbols: "user@domain@extra.com" - tests pattern doesn't allow multiple @
+- Spaces in middle: "user name@domain.com" - tests pattern rejects internal spaces
 
 Edge cases:
-- None/numbers/lists in input - should skip gracefully
-- Empty list - return 0
-- All invalid emails - return 0
-- Mixed valid/invalid - count only valid ones
+- None/numbers/lists in input - tests isinstance() type checking
+- Empty list - return 0 (common scenario, shouldn't crash)
+- All invalid emails - return 0 (tests resilience)
+- Mixed valid/invalid - count only valid ones (tests filtering logic)
 
-Known limitations:
-- Won't catch all edge cases (e.g., "user@domain.c" with 1-char TLD)
-- Doesn't verify domain actually exists (would need DNS lookup)
-- Doesn't support full RFC 5322 or internationalized domains
-- False positives (accepting invalid) are worse than false negatives for this use case
+Known limitations (important to document):
+- Won't catch all edge cases (e.g., "user@domain.c" with 1-char TLD) - regex is practical, not perfect
+- Doesn't verify domain actually exists (would need DNS lookup) - format validation only
+- Doesn't support full RFC 5322 or internationalized domains - acceptable tradeoff for simplicity
+- False positives (accepting invalid) are worse than false negatives for this use case - better to be strict
 
 ## 3) Explanation Review & Rewrite
 ### AI-generated explanation (original)
@@ -232,28 +232,28 @@ See `correct_task3.py`
 If you were to test this function, what areas or scenarios would you focus on, and why?
 
 Calculation correctness (the bug):
-- `[10, None, 20, None, 30]` should return 20.0, not 12.0 - directly tests the denominator fix
-- `[10, 20, 30]` all valid numbers - make sure None-skipping doesn't break normal case
-- `[None, None, 42, None]` single valid value - edge case
+- `[10, None, 20, None, 30]` should return 20.0, not 12.0 - directly tests the denominator fix, this was the core bug
+- `[10, 20, 30]` all valid numbers - make sure None-skipping doesn't break the normal case
+- `[None, None, 42, None]` single valid value - edge case of count=1, tests division works
 
 Edge cases:
-- Empty list - return 0
-- All None values - return 0
-- All invalid values like `["N/A", "error", []]` - return 0
+- Empty list - return 0 (common scenario, tests guard clause)
+- All None values - return 0 (tests division by zero protection)
+- All invalid values like `["N/A", "error", []]` - return 0 (tests error handling)
 
 Type handling:
-- Mixed ints and floats: `[10, 20.5, 30]`
-- Numeric strings: `["10", "20", "30"]` should convert correctly
-- Precision with decimals - verify float arithmetic
+- Mixed ints and floats: `[10, 20.5, 30]` - tests float conversion handles both
+- Numeric strings: `["10", "20", "30"]` should convert correctly - tests our design choice to accept strings
+- Precision with decimals - verify float arithmetic is accurate (important for measurements)
 
 Error resilience:
-- Non-numeric strings mixed with valid numbers
-- Invalid types like lists/dicts
-- Combinations of everything
+- Non-numeric strings mixed with valid numbers - tests try-except skips bad data and continues
+- Invalid types like lists/dicts - tests TypeError handling
+- Combinations of everything - tests function is truly robust
 
 Additional testing:
-- Property-based testing (hypothesis) to verify invariants: result between min/max of valid values, never crashes
-- Wouldn't test extreme values (Python handles fine), performance (not a bottleneck), or concurrency (pure function)
+- Property-based testing (hypothesis) to verify invariants: result between min/max of valid values, never crashes - catches unexpected edge cases
+- Wouldn't test extreme values (Python handles fine), performance (not a bottleneck), or concurrency (pure function) - not relevant concerns
 
 ## 3) Explanation Review & Rewrite
 ### AI-generated explanation (original)
